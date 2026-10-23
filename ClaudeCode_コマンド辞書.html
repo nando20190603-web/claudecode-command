@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claude コマンド辞書</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;600;700&display=swap');
+*{box-sizing:border-box}
+body,input,button{font-family:'Noto Sans JP',sans-serif}
+body{margin:40px auto;max-width:1380px;padding:0 24px;color:#1b2939;background:#f6f8fb}
+h1{font-size:28px}
+.usage{background:#eaf2f8;border-left:5px solid #183b56;padding:16px 20px;border-radius:6px;line-height:1.8}
+.usage code{display:block;background:white;padding:10px;margin:8px 0;border-radius:5px;white-space:pre-wrap}
+input{width:100%;padding:14px;border:1px solid #b9c6d6;border-radius:8px;font-size:16px}
+table{border-collapse:collapse;width:100%;background:white;margin:20px 0}
+th,td{text-align:left;vertical-align:top;padding:11px;border-bottom:1px solid #dbe2eb;font-size:13px}
+th{background:#183b56;color:white;position:sticky;top:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td:last-child{min-width:330px;color:#243b53}
+.note{line-height:1.9;color:#425466}
+.warn{background:#fff6e5;border-left:5px solid #d98a00;padding:12px 18px;border-radius:6px;line-height:1.8;font-size:13px}
+section{margin:32px 0}
+small{color:#53657a}
+nav{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+nav a{background:white;border:1px solid #b9c6d6;border-radius:999px;padding:5px 13px;font-size:12px;color:#183b56;text-decoration:none}
+@media print{input,nav{display:none}body{margin:0;background:white}tr{break-inside:avoid}h2{break-after:avoid}th{position:static}}
+</style>
+
+<h1>Claude コマンド辞書</h1>
+<p class="note" id="lead"></p>
+
+<div class="usage"><strong>基本の使い方</strong>
+<code>【標準コマンド】対話中に /コマンド を入力(例: /compact)
+【短縮指示】/コマンド 対象・目的・条件・希望する出力形式(例: /skeptic この計画が失敗する理由を3つ挙げて)</code>
+<strong>見つけ方</strong>:下の検索欄にコマンド・別名・目的・記入例の一部を入れると絞り込めます(例:要約、リスク、メール)。
+</div>
+<p><input id="q" placeholder="コマンド・別名・目的・記入例で検索(例:要約、リスク、メール)" aria-label="コマンドを検索"></p>
+<p id="count"></p>
+<nav id="toc"></nav>
+<div id="root"></div>
+
+<div class="note">
+<p class="warn">「標準コマンド」「CLI」「ショートカット」は Claude Code に実在する機能です。「短縮指示」は画像で共有されていた<strong>独自の略称</strong>で、Claude の標準搭載コマンドではありません。使う場合は文中に添えるか、スキル/カスタムコマンドとして自分で定義してください。標準コマンドと同名のもの(/review・/plan・/resume・/simplify など)は標準コマンドが優先されます。バージョンにより内容が異なるため、最新は <code style="display:inline;padding:0 4px">/help</code> で確認してください。</p>
+</div>
+<small>出典:ユーザー提供の画像(Claude(裏)コマンド99選、神コマンド40選ほか、Claude Code 便利コマンド集)および Claude Code 公式ドキュメント https://docs.claude.com/en/docs/claude-code 。作成 2026-10-23。</small>
+
+<script>
+const S = [];
+const add = (id, title, rows, head) => S.push({id, title, rows, head: head || ['コマンド','同じ意味の別名','指示内容','記入例']});
+
+/* ---------- 標準:スラッシュコマンド ---------- */
+add('slash-talk','標準|会話の管理',[
+ ['/clear','/reset、/new','会話履歴をリセットして新規開始','別タスクに切り替えるとき、前の文脈を持ち込みたくないとき'],
+ ['/compact','—','会話を要約・圧縮してコンテキストを軽くする','/compact 決定事項と未解決の課題を残して'],
+ ['/resume','—','過去のセッションを再開','途中だった作業の続きをするとき'],
+ ['/rewind','Esc Esc','過去の時点を選び、コード・会話を巻き戻す','Claudeのやり方が意図と違ったとき、途中からやり直したいとき'],
+ ['/branch','—','会話を分岐させて別の方向を試す','今の流れを残したまま別案を試したいとき'],
+ ['/btw','—','本筋に影響しない横からの質問','/btw さっき編集したファイル名を教えて'],
+ ['/copy','—','最新の回答をクリップボードにコピー','回答をメールや資料に貼り付けたいとき'],
+ ['/plan','Shift+Tab でも切替','計画モード(読み取り専用で計画だけ立てる)','/plan 認証バグの修正'],
+ ['/effort','—','思考の深さを low / medium / high で調整(auto で既定に戻す)','単純作業は low、設計判断は high']
+]);
+add('slash-state','標準|状態の確認',[
+ ['/status','—','現在の状態(バージョン・モデル・接続など)を表示','設定や接続を確認したいとき'],
+ ['/context','—','コンテキスト使用量の確認','動作が重いとき、/compact の要否を判断するとき'],
+ ['/diff','—','変更差分の確認','Claudeが何を変更したか確認するとき'],
+ ['/tasks','—','実行中のタスクの確認','バックグラウンド処理の状況確認'],
+ ['/usage','—','利用量の確認','上限までの残りを確認したいとき'],
+ ['/cost','—','トークン使用量・コストの表示','コストを把握したいとき'],
+ ['/doctor','—','インストール・環境の診断','動作がおかしいとき']
+]);
+add('slash-config','標準|設定・環境',[
+ ['/help','—','ヘルプと利用可能なコマンドの表示','迷ったらまず実行'],
+ ['/model','—','使用モデルの切り替え(作業中も即反映)','複雑な設計→高性能モデル、単純な修正→軽量モデル'],
+ ['/fast','—','高速モードの切り替え','応答速度を優先したいとき'],
+ ['/config','—','設定画面を開く(テーマ・モデル等)','表示や動作の設定変更'],
+ ['/permissions','—','ツールの許可/拒否ルールの確認・編集','操作の許可範囲を変えたいとき'],
+ ['/memory','—','CLAUDE.md・自動メモリの確認と編集','前回学んだことの確認・修正'],
+ ['/init','—','プロジェクト用 CLAUDE.md を自動生成','新しいプロジェクトで最初に実行'],
+ ['/terminal-setup','—','ターミナルの改行(Shift+Enter 等)設定','改行入力がうまくいかないとき'],
+ ['/voice','—','音声入力(スペースキー長押しで話す)','長い指示を口頭で伝えたいとき'],
+ ['/login','/logout','アカウントのログイン・ログアウト','アカウントを切り替えるとき']
+]);
+add('slash-quality','標準|品質・レビュー',[
+ ['/code-review','/review','変更内容のコードレビュー','/code-review high'],
+ ['/security-review','—','変更内容の脆弱性チェック','公開前のセキュリティ確認'],
+ ['/simplify','—','変更したコードの整理・簡素化','実装後の仕上げ']
+]);
+add('slash-auto','標準|自動化・連携',[
+ ['/mcp','—','MCPサーバー(外部ツール連携)の管理・認証','連携状況の確認、認証の実行'],
+ ['/agents','—','サブエージェントの管理','専用エージェントの確認・作成'],
+ ['/loop','—','プロンプトを一定間隔で繰り返し実行','/loop 5m デプロイ状況を確認'],
+ ['/schedule','—','定期実行(ルーティン)の作成・管理','毎朝のレポート作成を予約'],
+ ['/remote-control','/rc','ローカルのセッションを claude.ai/code やスマホからリモート操作','席を外している間の進捗確認・追加指示'],
+ ['/exit','—','Claude Code を終了','作業を終えるとき']
+]);
+
+/* ---------- 標準:CLI / ショートカット / コツ ---------- */
+add('cli','標準|CLI(ターミナルから)',[
+ ['claude','—','対話モードを起動','claude'],
+ ['claude "質問"','—','初期プロンプト付きで起動','claude "このフォルダの構成を説明して"'],
+ ['claude -p "質問"','—','非対話(print)モードで実行して終了','claude -p "README を要約して"'],
+ ['claude -c','—','直近の会話を継続','前回の続きから再開'],
+ ['claude -r','—','セッションを選んで再開','複数の作業を並行しているとき'],
+ ['claude --model <名前>','—','モデルを指定して起動','claude --model sonnet'],
+ ['claude mcp','—','MCPサーバーの設定管理','claude mcp list'],
+ ['claude update','—','最新版に更新','定期的に実行'],
+ ['claude --version','—','バージョン表示','不具合報告・確認時']
+],['コマンド','別名','指示内容','記入例']);
+add('keys','標準|キーボード操作',[
+ ['Esc','—','実行中の処理を中断','方向性が違うと気づいたとき'],
+ ['Esc Esc','/rewind','過去のメッセージに巻き戻し','やり直したいとき'],
+ ['Shift+Tab','—','権限モードの切り替え(通常/自動編集/プラン)','実装前に計画モードで方針を固める'],
+ ['Ctrl+C','—','入力のキャンセル / 終了','入力を取り消したいとき'],
+ ['Ctrl+D','—','セッション終了','終了したいとき'],
+ ['Ctrl+L','—','画面クリア','表示を整理したいとき'],
+ ['↑ / ↓','—','入力履歴の呼び出し','直前の指示を再利用'],
+ ['#','—','メモリにメモを追加','# 提出物は必ず日本語で書く'],
+ ['!','—','シェルコマンドを直接実行','!git status'],
+ ['@ファイル名','—','ファイルを参照として指定','@README.md を要約して'],
+ ['画像の貼り付け','—','スクリーンショット等を貼って指示','画面の不具合を貼り付けて原因を聞く']
+]);
+add('tips','標準|活用のコツ',[
+ ['CLAUDE.md に判断軸を書く','—','判断基準を渡すほど毎回の説明が不要になる','まず /init で作り、役職・方針・出力ルールを書く'],
+ ['スキルでメモ参照','—','スキルを使ってメモ等を参照させる','決まった手順をスキル化して呼び出す'],
+ ['最初に使う順番の目安','—','現状把握→確認→品質向上の流れ','/context → /diff → /code-review']
+]);
+
+/* ---------- 短縮指示:神コマンド40選系 ---------- */
+add('ali-understand','短縮指示|理解・整理',[
+ ['/explainlikeim5','/eli5','5歳の子でもわかるように説明','/explainlikeim5 サブスクの仕組みを説明して'],
+ ['/brief','—','できるだけ短く要点だけで回答','/brief この資料を結論・理由・次の行動の3点で'],
+ ['/compare','—','複数の選択肢を並べて比較','/compare この3案を収益性・難易度・期間で比較して'],
+ ['/critique','—','弱点や改善点を見つけて具体的に指摘','/critique この企画書の弱点を3つ指摘して'],
+ ['/teacher','—','先生のように順番を追って丁寧に教える','/teacher LTVとCACの関係を例付きで教えて'],
+ ['/scout','/riskcheck','リスクや見落とし、抜け漏れまで洗い出す','/scout この計画の抜け漏れを洗い出して'],
+ ['/debate','—','賛成と反対の両方の視点から整理','/debate リモート勤務の是非を両論で'],
+ ['/summary','—','長い文章や情報の重要ポイントを要約','/summary この記事を要約して'],
+ ['/research','—','テーマについて詳しく深掘りして整理','/research 国内の生成AI研修市場'],
+ ['/deepresearch','—','テーマを多角的に調べ、根拠つきで整理','/deepresearch 競合3社の価格戦略'],
+ ['/deepthink','—','できるだけ深く考えて精度高く回答','/deepthink この意思決定の論点を整理して'],
+ ['/simplify','—','難しい内容をかみ砕いてわかりやすく','/simplify この専門的な説明を平易に']
+]);
+add('ali-improve','短縮指示|改善・検討',[
+ ['/pitch','—','短く伝わる提案文や売り込み文を作成','/pitch 新サービスを30秒で'],
+ ['/ghost','/ghostwriter、/naturalize','AIっぽさを減らして自然な文章に整える','/ghost この案内文を自然な文に'],
+ ['/10x','—','元の文章や案を大幅にレベルアップ','/10x このキャッチコピーを'],
+ ['/devil','/devilsadvocate','あえて反対の立場から意見や懸念を出す','/devil この投資案への反論を5つ'],
+ ['/godmode','—','できるだけ詳しく網羅的な回答を作成','/godmode 新規事業の評価観点を網羅して'],
+ ['/rewrite','—','内容を保ちながら文章をより良く書き換え','/rewrite この文章を読みやすく'],
+ ['/optimize','—','効率や成果が高まるよう内容を最適化','/optimize この業務フローを'],
+ ['/debug','—','問題の原因やミスになっている部分を見つける','/debug この計算式の誤りを探して'],
+ ['/review','—','内容やコードを確認して改善点を出す','/review この提案書を確認して'],
+ ['/ideas','—','テーマに合う新しい案や切り口を提案','/ideas 既存顧客向けの新サービス']
+]);
+add('ali-plan','短縮指示|計画・実務',[
+ ['/roadmap','—','目標達成までの学習手順や流れを設計','/roadmap 3か月でデータ分析を学ぶ'],
+ ['/plan','—','具体的に何をするか行動計画を組み立て','/plan 来月の施策実行計画'],
+ ['/mentor','—','経験者のように実践的な助言','/mentor 部下育成の悩み'],
+ ['/coach','—','目標達成に向けて改善点や伸ばし方を示す','/coach 今日の最初の一歩を'],
+ ['/analyst','—','データや状況を整理して論理的に分析','/analyst 売上の変化要因を'],
+ ['/startup','—','新しい事業を考える視点でアイデアを出す','/startup この市場の参入アイデア'],
+ ['/pm','—','企画や機能の優先順位を整理して考える','/pm この機能リストの優先順位'],
+ ['/security','—','安全性やリスクの観点から問題点を確認','/security このログイン仕様を'],
+ ['/interview','—','目的や職種に合った面接質問を作成','/interview 事業責任者の採用面接'],
+ ['/resume','—','履歴書や職務経歴書をより魅力的に改善','/resume この職歴を成果中心に']
+]);
+add('ali-make','短縮指示|発信・制作',[
+ ['/brainstorm','—','アイデアをいろいろな角度から一気に出す','/brainstorm キャンペーン案を10個'],
+ ['/email','—','相手や目的に合ったメール文章を作成','/email 納期変更のお願い'],
+ ['/translate','—','意味やニュアンスを保ちながら翻訳','/translate 自然なビジネス英語に'],
+ ['/proofread','—','誤字や不自然な表現を見つけて整える','/proofread この文章を'],
+ ['/caption','—','SNS投稿に合ったキャプション文を作成','/caption イベント写真に合う投稿文'],
+ ['/hook','—','最初に目を引く書き出しや見出しを作る','/hook このイベント告知の一文'],
+ ['/checklist','—','やるべきことを抜けなく一覧に整理','/checklist 公開前の確認項目'],
+ ['/template','—','何度も使い回せるテンプレートを作成','/template 週次報告'],
+ ['/reel','—','SNSのショート動画向け台本を作成','/reel 新サービス紹介'],
+ ['/carousel','—','SNSの複数枚投稿の内容を作成','/carousel 使い方5ステップ'],
+ ['/agenda','—','議題を整理','/agenda 来週の定例会議'],
+ ['/twintails','—','可愛い口調で回答(Twintails☆Cute)','/twintails この説明を可愛い口調で'],
+ ['/follow_penguin','—','ペンギン口調で回答','/follow_penguin この説明をペンギン口調で']
+]);
+
+/* ---------- 短縮指示:裏コマンド99選系 ---------- */
+const r = (c, input, desc) => [c, '—', desc, c + ' ' + input];
+add('u-mail','短縮指示(裏99)|メール&メッセージ',[
+ r('/INTRO','Aさん+Bさん+背景','ダブルオプトインの紹介文'),
+ r('/HARRMSG','相手+トピック','言いにくいことを丁寧に伝える'),
+ r('/OOO','日程+代理連絡先','不在時の自動返信文'),
+ r('/CONFIDENT','メール','曖昧な言い回しと謝罪を排除'),
+ r('/THANKS','相手+理由','短く誠実なお礼'),
+ r('/BULLET2EMAIL','箇条書き','箇条書きを整えたメールに'),
+ r('/SAYNO','依頼','関係を壊さない断り方'),
+ r('/FOLLOWUP','トピック','未返信メールの催促'),
+ r('/WARMER','メール','もっと柔らかい印象に'),
+ r('/SHORTEN','メール','半分の長さに、要点は維持'),
+ r('/DECLINE','メール','丁寧に断る')
+]);
+add('u-learn','短縮指示(裏99)|学ぶ&理解する',[
+ r('/MENTALMODEL','トピック','理解の鍵になる思考モデル'),
+ r('/ASKBETTER','トピック','本当はすべき質問'),
+ r('/GLOSSARY','トピック','重要用語を定義'),
+ r('/SUM3','文章','3行に要約'),
+ r('/PREREQ','トピック','事前に知っておくべきこと'),
+ r('/QUIZ','トピック','5問クイズ'),
+ r('/ANALOGY','概念','身近なものに例える'),
+ r('/MYTHS','トピック','よくある誤解'),
+ r('/PRIMER','トピック','短時間の速習講座'),
+ r('/ELI10','トピック','10歳にもわかる説明')
+]);
+add('u-work','短縮指示(裏99)|仕事&キャリア',[
+ r('/RAISE','背景','昇給交渉のスクリプト'),
+ r('/IDONTKNOW','状況','「まだわかりません」をプロらしく言う'),
+ r('/SELFREVIEW','メモ','メモから自己評価を作成'),
+ r('/ONEOKONE','トピック','上司との1on1準備'),
+ r('/WINS5','メモ','実績を5つの箇条書きに'),
+ r('/GAP','理由','職務経歴のブランクを説明'),
+ r('/RECONNECT','相手+背景','LinkedInでの再接触文'),
+ r('/NEGOTIATE','交渉内容','交渉のスクリプトを作成'),
+ r('/ASKINTERVIEWER','職種+企業タイプ','面接官への鋭い質問'),
+ r('/RESUMEBULLET','箇条書き','職務経歴を書き直す'),
+ r('/INTERVIEWQ','質問','自信を持って答える準備')
+]);
+add('u-write','短縮指示(裏99)|書く&編集する',[
+ r('/TONE','文章+トーン','指定したトーンで書き換え'),
+ r('/TITLES','文章','タイトル案を出す'),
+ r('/EXAMPLES','文章','具体例を追加'),
+ r('/HUMAN','文章','AIっぽさを消して自然な文に'),
+ r('/ACTIVE','文章','受動態を能動態に'),
+ r('/FILLER','文章','弱い言葉にフラグを立てる'),
+ r('/OPENERS','文章','より強い書き出し文を3案'),
+ r('/CUTHALF','文章','長さを半分にカット'),
+ r('/REWRITE5','文','5パターンに書き換え'),
+ r('/PROOF','文章','誤字脱字を修正')
+]);
+add('u-plan','短縮指示(裏99)|計画&整理',[
+ r('/ORDER','タスク','タスクの順序を決める'),
+ r('/PREPTIME','イベント+残り時間','締切内の準備プラン'),
+ r('/MEALS','食材/制約','1週間の献立'),
+ r('/PRIORITIZE','リスト','曖昧なToDoを並べ替え'),
+ r('/ROUTINE','目標','毎日のルーティン'),
+ r('/SCHEDULE','イベント+所要時間','タイムスケジュール作成'),
+ r('/PACK','旅行','持ち物リスト'),
+ r('/MILESTONES','目標+締切','目標までの週次チェックポイント'),
+ r('/WEEK','優先事項','1週間の計画')
+]);
+add('u-sns','短縮指示(裏99)|コンテンツ&SNS',[
+ r('/COMMENT','投稿','価値を足す鋭いコメント3案'),
+ r('/SHORTPOST','アイデア','100語の短い投稿'),
+ r('/CONTRARIAN','トピック','鋭い筋の通った逆張り意見'),
+ r('/SUBJECT','メール/投稿','開封される件名を5案'),
+ r('/BIO','詳細+雰囲気','3スタイルの短いプロフィール文'),
+ r('/CTA','投稿','CTA案を3つ'),
+ r('/REPURPOSE','投稿','3つの形式に横展開'),
+ r('/CARO','トピック','カルーセルの構成案'),
+ r('/THREAD','アイデア','1つのアイデアを6ツイートのスレッドに')
+]);
+add('u-think','短縮指示(裏99)|考える&決める',[
+ r('/MINTEST','プロジェクト','1週間で試せる最小版'),
+ r('/PREMORTEM','プラン','失敗するとしたらどこか'),
+ r('/RIPPLE','決断','二次的な影響を可視化'),
+ r('/STEPS','問題','一歩ずつ順を追って解説'),
+ r('/SKEPTIC','プラン','懐疑派からの質問'),
+ r('/STEELMAN','意見','最も強い反対意見'),
+ r('/BLINDSPOT','状況','見落としがちな点を洗い出す'),
+ r('/REALPC','決断','メリット・デメリット'),
+ r('/CHOOSE','AとB','選択肢を比較検討')
+]);
+add('u-idea','短縮指示(裏99)|ブレインストーミング',[
+ r('/CHILD','問題','好奇心旺盛な子供ならどう解くか'),
+ r('/AS','職業+問題','その職業ならどう解決するか'),
+ r('/JOURNAL10','テーマ','ジャーナリング用の問い10個'),
+ r('/STARTERS','トピック','退屈しない会話の始め方'),
+ r('/METAPHOR','概念','メタファーで例える'),
+ r('/COMBINE','A+B','2つのアイデアを5方向に融合'),
+ r('/ANGLE','トピック','見落とされがちな切り口'),
+ r('/UNUSUAL','問題','型破りなアプローチ10案'),
+ r('/NAMES','対象+雰囲気','ネーミング案'),
+ r('/GIFTS','相手+機会+予算','プレゼント案'),
+ r('/IDEAS20','トピック','アイデアを20個')
+]);
+add('u-meet','短縮指示(裏99)|会議&メモ',[
+ r('/RETRO','プロジェクト','何がうまくいって何がダメだったか、次はどうするか'),
+ r('/TLDR','メモ','最短要約'),
+ r('/DEBRIEF','会議','何がうまくいったか、何を直すか'),
+ r('/BRIEFME','トピック','会議前の高速インプット'),
+ r('/QUESTIONS','トピック','何を聞くべきか'),
+ r('/DECISIONS','メモ','決定事項の抽出'),
+ r('/RECAP','会議','5行の要約'),
+ r('/STANDUP','昨日+今日+障害','日次アップデート'),
+ r('/ACTIONITEMS','メモ','ToDoと担当者を抽出'),
+ r('/MEETINGNOTES','文字起こし','生メモを整った議事録に')
+]);
+
+/* ---------- 描画 ---------- */
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const total = S.reduce((n,s)=>n+s.rows.length,0);
+const groupOf = t => t.split('|')[0];
+let html = '', toc = '', lastG = '';
+S.forEach(s => {
+  const [g, name] = s.title.split('|');
+  if (g !== lastG) { html += `<h2 class="grp" data-g="${esc(g)}">${esc(g)}</h2>`; lastG = g; }
+  toc += `<a href="#${s.id}">${esc(name)}</a>`;
+  html += `<section id="${s.id}" data-g="${esc(g)}"><h3>${esc(name)}</h3><table><thead><tr>${s.head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${
+    s.rows.map(r=>`<tr>${r.map(c=>`<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></section>`;
+});
+document.querySelector('#root').innerHTML = html;
+document.querySelector('#toc').innerHTML = toc;
+document.querySelector('#lead').textContent = `Claude Code の標準コマンド・CLI・キーボード操作と、共有された短縮指示(神コマンド系・裏コマンド99選系)を重複を除いて統合した ${total} 項目。大文字・小文字は区別せず検索できます。`;
+document.querySelector('#count').textContent = total + '項目を表示';
+document.querySelector('#q').addEventListener('input', e => {
+  const q = e.target.value.toLowerCase(); let n = 0;
+  document.querySelectorAll('tbody tr').forEach(r => { r.hidden = !r.textContent.toLowerCase().includes(q); if (!r.hidden) n++; });
+  document.querySelectorAll('section').forEach(s => s.hidden = ![...s.querySelectorAll('tbody tr')].some(r => !r.hidden));
+  document.querySelectorAll('h2.grp').forEach(h => h.hidden = ![...document.querySelectorAll(`section[data-g="${h.dataset.g}"]`)].some(s => !s.hidden));
+  document.querySelector('#count').textContent = n + '項目を表示';
+});
+</script>
+</html>
