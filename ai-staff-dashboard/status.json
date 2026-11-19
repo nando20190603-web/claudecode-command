@@ -1,0 +1,4 @@
+{
+  "_説明": "各エージェントの実行記録。キーは index.html の STAFF の id。例: \"brief\": {\"date\": \"2026-11-20\", \"result\": \"ok\", \"note\": \"Chat投稿200\", \"level\": 12}。result は ok / ng。公開リポジトリのため、氏名・タスク名・URLは書かない。",
+  "agents": {}
+}
