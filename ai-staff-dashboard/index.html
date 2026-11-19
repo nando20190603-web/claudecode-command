@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI社員ダッシュボード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eef1f5; --card:#ffffff; --ink:#1f2933; --sub:#5f6b7a; --line:#dde3ea;
+  --accent:#3b6fd8; --ok:#2f9e6b; --warn:#d98a1c; --idle:#8a94a3;
+  --blue:#7fb8e6; --pink:#f0948a; --purple:#b49be6; --yellow:#f2c55c; --green:#8fd1a8;
+  --shadow:0 1px 2px rgba(20,30,50,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#14181f; --card:#1d232c; --ink:#e7ecf2; --sub:#9aa6b5; --line:#2c3440;
+    --accent:#7ea4f2; --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#14181f; --card:#1d232c; --ink:#e7ecf2; --sub:#9aa6b5; --line:#2c3440;
+  --accent:#7ea4f2; --shadow:none;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Noto Sans JP",sans-serif;line-height:1.55}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+header h1{font-size:20px;margin:0 0 4px}
+header p{margin:0;color:var(--sub);font-size:13px}
+.today{margin:20px 0 8px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)}
+.today h2,.sec h2{font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent);display:inline-block}
+.timeline{display:flex;flex-wrap:wrap;gap:8px}
+.slot{font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 12px;white-space:nowrap}
+.slot b{font-weight:700;margin-right:6px}
+.slot.done{color:var(--sub)}
+.slot.next{border-color:var(--accent);color:var(--accent)}
+.empty{color:var(--sub);font-size:13px}
+.tabs{display:flex;gap:6px;margin:22px 0 4px;flex-wrap:wrap}
+.tabs button{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:5px 14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.note{color:var(--sub);font-size:12px;margin:6px 0 14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:flex;gap:10px;box-shadow:var(--shadow)}
+.card.grad{opacity:.55}
+.card svg{flex:0 0 56px;width:56px;height:56px}
+.body{min-width:0;flex:1}
+.name{font-weight:700;font-size:15px}
+.role{font-size:12px;color:var(--sub)}
+.meta{font-size:12px;color:var(--sub);margin-top:2px}
+.badge{display:inline-block;font-size:11px;border-radius:4px;padding:0 6px;margin-left:4px;vertical-align:1px;border:1px solid var(--line);color:var(--sub)}
+.badge.on{border-color:var(--ok);color:var(--ok)}
+.badge.train{border-color:var(--warn);color:var(--warn)}
+.st{font-size:12px;margin-top:4px}
+.st.ok{color:var(--ok)} .st.ng{color:#d0453b} .st.wait{color:var(--sub)}
+.bar{height:5px;background:var(--line);border-radius:3px;margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px}
+footer{margin-top:28px;font-size:12px;color:var(--sub)}
+footer li{margin:2px 0}
+.themebtn{float:right;font:inherit;font-size:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:6px;padding:3px 10px;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <button class="themebtn" id="theme" type="button">表示切替</button>
+    <h1>AI社員ダッシュボード</h1>
+    <p>マーケティング事業部の定期業務を担当するAIエージェントの一覧です。部長の仕事は「確認・指示・決定」だけ。</p>
+  </header>
+
+  <section class="today" aria-labelledby="t-h">
+    <h2 id="t-h"><span class="dot"></span><span id="todayLabel">今日の出番</span></h2>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <div class="tabs" role="group" aria-label="表示の絞り込み">
+    <button data-f="all" aria-pressed="true">すべて</button>
+    <button data-f="on" aria-pressed="false">稼働中</button>
+    <button data-f="train" aria-pressed="false">研修中</button>
+    <button data-f="grad" aria-pressed="false">卒業</button>
+  </div>
+  <p class="note">並び順は次の出番が近い順。実行結果は status.json に記録されたものだけを表示し、記録がない場合は「記録なし（未確認）」とします。</p>
+  <div class="grid" id="grid"></div>
+
+  <footer>
+    <p>状態の意味</p>
+    <ul>
+      <li>稼働中：スケジュールで自動実行されている</li>
+      <li>研修中：手順（スキル）はあるが、依頼されたときだけ動く。定期実行は未設定</li>
+      <li>卒業：役割を他の社員に引き継ぎ、停止済み（いつでも再開可能）</li>
+    </ul>
+    <p>時刻はすべて日本時間。祝日の扱いは各エージェントの手順に従う（このページでは祝日判定をしない）。</p>
+  </footer>
+</div>
+
+<script>
+// ---- 名簿（公開リポジトリのため、氏名・ID・URLなどの内部情報は書かない） ----
+// days: 0=日〜6=土 / rule: "w1"=第1週のみ, "w2plus"=第2週以降, "w3"=第3週のみ
+const STAFF = [
+  {id:"brief",   name:"あさひ",   role:"モーニングブリーフ（タスク・会議・時間割）", state:"on",  color:"blue",   acc:"sun",
+   perm:"読み取り＋部長専用Chatへ投稿", runs:[{days:[1,2,3,4,5], time:"07:45"}]},
+  {id:"note",    name:"よみ丸",   role:"note記事の通知",                          state:"on",  color:"green",  acc:"paper",
+   perm:"読み取り＋Chat通知", runs:[{days:[1,2,3,4,5], time:"09:00"}]},
+  {id:"weekly",  name:"しらべ",   role:"メンバー週報のチェック",                    state:"on",  color:"purple", acc:"glass",
+   perm:"読み取り＋Chat通知", runs:[{days:[1], time:"11:00"}]},
+  {id:"bell",    name:"りん",     role:"週次定例の開始5分前アラート",              state:"on",  color:"yellow", acc:"bell",
+   perm:"Chat通知のみ", runs:[{days:[1], time:"16:55"}]},
+  {id:"teirei",  name:"ふで丸",   role:"週次定例の議事録集約",                     state:"on",  color:"pink",   acc:"brush",
+   perm:"Notionへ追記＋Chat通知", runs:[{days:[1], time:"18:30", rule:"w2plus"},{days:[1], time:"19:00", rule:"w1"}]},
+  {id:"dept",    name:"みつば",   role:"部門MTG議事録（3部門まとめ）",             state:"on",  color:"green",  acc:"leaf",
+   perm:"Notionへ追記＋Drive整理＋Chat通知", runs:[{days:[5], time:"11:30"}]},
+  {id:"newbiz",  name:"ひらめ",   role:"新規事業検討会の議事録",                   state:"on",  color:"yellow", acc:"bulb",
+   perm:"Notionへ追記＋Chat通知", runs:[{days:[5], time:"18:00", rule:"w3"}]},
+  {id:"report",  name:"しゅう太", role:"自分の週報作成（md→docx）",                 state:"on",  color:"blue",   acc:"doc",
+   perm:"ローカル保存（PCのChrome接続が必要）", runs:[{days:[5], time:"18:10"},{days:[5], time:"19:10"}]},
+
+  {id:"progress",name:"かぞえ",   role:"部門の進捗確認・約束の答え合わせ",          state:"train", color:"purple", acc:"check",
+   perm:"読み取り＋下書き", runs:[]},
+  {id:"triage",  name:"わけ丸",   role:"部下の報告・相談の仕分けと返信下書き",       state:"train", color:"pink",   acc:"mail",
+   perm:"読み取り＋下書き", runs:[]},
+  {id:"aidx",    name:"ともし",   role:"社内AI浸透の進捗報告",                      state:"train", color:"yellow", acc:"bulb",
+   perm:"読み取り＋下書き", runs:[]},
+
+  {id:"old-chat",name:"あさ吉（旧）", role:"朝ブリーフ→Chat（あさひに統合）",         state:"grad", color:"blue",   acc:"sun",  perm:"", runs:[]},
+  {id:"old-mtg", name:"かいぎ（旧）", role:"会議ブリーフ（あさひに統合）",            state:"grad", color:"purple", acc:"glass",perm:"", runs:[]},
+  {id:"old-web", name:"うぇぶ（旧）", role:"部門MTG議事録：WEBマーケ（みつばに統合）", state:"grad", color:"green",  acc:"leaf", perm:"", runs:[]},
+  {id:"old-sys", name:"しすて（旧）", role:"部門MTG議事録：システム（みつばに統合）",  state:"grad", color:"green",  acc:"leaf", perm:"", runs:[]},
+];
+
+const COLORS = {blue:"var(--blue)",pink:"var(--pink)",purple:"var(--purple)",yellow:"var(--yellow)",green:"var(--green)"};
+const ACC = {
+  sun:   '<circle cx="44" cy="12" r="6" fill="#f6b73c"/><g stroke="#f6b73c" stroke-width="2"><path d="M44 2v3M44 19v3M34 12h3M51 12h3"/></g>',
+  paper: '<rect x="38" y="30" width="14" height="16" rx="2" fill="#fff" stroke="#8a94a3"/><path d="M41 35h8M41 39h8M41 43h5" stroke="#8a94a3"/>',
+  glass: '<circle cx="47" cy="40" r="6" fill="none" stroke="#5f6b7a" stroke-width="2.5"/><path d="M51 44l5 5" stroke="#5f6b7a" stroke-width="3" stroke-linecap="round"/>',
+  bell:  '<path d="M20 12a8 8 0 0 1 16 0v6H20z" fill="#f2c55c" stroke="#b8871e"/><circle cx="28" cy="20" r="2" fill="#b8871e"/>',
+  brush: '<path d="M44 8l6 24" stroke="#6b4f2a" stroke-width="3" stroke-linecap="round"/><path d="M50 32l2 6-5-3z" fill="#333"/>',
+  leaf:  '<path d="M28 4c8 2 10 8 4 12-6-2-8-6-4-12z" fill="#4caf7a"/>',
+  bulb:  '<circle cx="46" cy="12" r="6" fill="#ffe27a" stroke="#c9a227"/><rect x="43" y="18" width="6" height="3" fill="#8a94a3"/>',
+  doc:   '<rect x="40" y="28" width="13" height="17" rx="1.5" fill="#e8eefc" stroke="#3b6fd8"/><path d="M43 33h7M43 37h7" stroke="#3b6fd8"/>',
+  check: '<rect x="39" y="30" width="15" height="15" rx="3" fill="#fff" stroke="#2f9e6b" stroke-width="2"/><path d="M42 37l3 3 6-6" fill="none" stroke="#2f9e6b" stroke-width="2.5"/>',
+  mail:  '<rect x="38" y="33" width="16" height="11" rx="1.5" fill="#fff" stroke="#8a94a3"/><path d="M38 34l8 6 8-6" fill="none" stroke="#8a94a3"/>',
+};
+function avatar(s){
+  const c = COLORS[s.color];
+  const sleepy = s.state === "grad";
+  const eyes = sleepy
+    ? '<path d="M18 31q3 2 6 0M32 31q3 2 6 0" stroke="#333" stroke-width="1.8" fill="none"/>'
+    : '<circle cx="21" cy="31" r="2.6" fill="#333"/><circle cx="35" cy="31" r="2.6" fill="#333"/>';
+  return `<svg viewBox="0 0 60 60" aria-hidden="true">
+    <ellipse cx="28" cy="36" rx="22" ry="19" fill="${c}"/>
+    <ellipse cx="20" cy="50" rx="5" ry="3" fill="${c}" opacity=".8"/><ellipse cx="36" cy="50" rx="5" ry="3" fill="${c}" opacity=".8"/>
+    ${eyes}
+    <ellipse cx="16" cy="37" rx="3" ry="1.8" fill="#f28b82" opacity=".55"/><ellipse cx="40" cy="37" rx="3" ry="1.8" fill="#f28b82" opacity=".55"/>
+    <path d="M25 38q3 2.5 6 0" stroke="#333" stroke-width="1.6" fill="none"/>
+    ${ACC[s.acc]||""}
+  </svg>`;
+}
+
+// ---- 日本時間 ----
+function jstNow(){
+  const p = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hour12:false,weekday:"short"}).formatToParts(new Date());
+  const g = t => p.find(x=>x.type===t).value;
+  const wd = {Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6}[g("weekday")];
+  return {y:+g("year"),m:+g("month"),d:+g("day"),wd,min:(+g("hour")%24)*60+ +g("minute")};
+}
+function ruleOk(rule, day){
+  if(!rule) return true;
+  if(rule==="w1") return day<=7;
+  if(rule==="w2plus") return day>=8;
+  if(rule==="w3") return day>=15 && day<=21;
+  return true;
+}
+const toMin = t => { const [h,m]=t.split(":").map(Number); return h*60+m; };
+const WD = ["日","月","火","水","木","金","土"];
+
+// 次の出番（最大14日先まで探索）
+function nextRun(s, now){
+  if(!s.runs.length) return null;
+  for(let k=0;k<15;k++){
+    const dt = new Date(Date.UTC(now.y, now.m-1, now.d+k));
+    const wd = dt.getUTCDay(), day = dt.getUTCDate();
+    const cands = s.runs.filter(r=>r.days.includes(wd) && ruleOk(r.rule, day))
+      .map(r=>toMin(r.time)).filter(m=> k>0 || m>now.min).sort((a,b)=>a-b);
+    if(cands.length) return {k, min:cands[0], m:dt.getUTCMonth()+1, d:day, wd};
+  }
+  return null;
+}
+const fmt = m => String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");
+
+// ---- 実行記録（任意。status.json があれば読む） ----
+let STATUS = {};
+async function loadStatus(){
+  try{
+    const r = await fetch("status.json",{cache:"no-store"});
+    if(r.ok){ const j = await r.json(); STATUS = j.agents || {}; }
+  }catch(e){ /* 記録なしとして表示 */ }
+}
+
+function todayStr(now){ return `${now.y}-${String(now.m).padStart(2,"0")}-${String(now.d).padStart(2,"0")}`; }
+
+function statusLine(s, now){
+  if(s.state==="grad") return {cls:"wait", text:"停止中"};
+  if(s.state==="train") return {cls:"wait", text:"依頼されたときだけ動く（定期実行は未設定）"};
+  const rec = STATUS[s.id];
+  if(rec && rec.date === todayStr(now)){
+    const ok = rec.result === "ok";
+    return {cls: ok?"ok":"ng", text:`今日：${ok?"完了":"要確認"}${rec.note?"（"+rec.note+"）":""}`};
+  }
+  return {cls:"wait", text:"今日：記録なし（未確認）"};
+}
+
+let filter = "all";
+try{ filter = localStorage.getItem("aiStaffFilter") || "all"; }catch(e){}
+
+function render(){
+  const now = jstNow();
+  document.getElementById("todayLabel").textContent = `今日の出番（${now.m}/${now.d}（${WD[now.wd]}））`;
+
+  // 今日のタイムライン
+  const slots = [];
+  STAFF.filter(s=>s.state==="on").forEach(s=>{
+    s.runs.forEach(r=>{
+      if(r.days.includes(now.wd) && ruleOk(r.rule, now.d)) slots.push({s, min:toMin(r.time)});
+    });
+  });
+  slots.sort((a,b)=>a.min-b.min);
+  const nextIdx = slots.findIndex(x=>x.min>now.min);
+  document.getElementById("timeline").innerHTML = slots.length
+    ? slots.map((x,i)=>`<span class="slot ${x.min<=now.min?"done":""} ${i===nextIdx?"next":""}"><b>${fmt(x.min)}</b>${x.s.name}・${x.s.role}${x.min<=now.min?"（時刻経過）":""}</span>`).join("")
+    : '<span class="empty">今日の定期実行はありません。</span>';
+
+  // カード
+  const order = {on:0, train:1, grad:2};
+  const list = STAFF.filter(s=> filter==="all" || s.state===filter)
+    .map(s=>({s, nx: nextRun(s, now)}))
+    .sort((a,b)=> order[a.s.state]-order[b.s.state] ||
+      ((a.nx? a.nx.k*1440+a.nx.min : 1e9) - (b.nx? b.nx.k*1440+b.nx.min : 1e9)));
+
+  document.getElementById("grid").innerHTML = list.map(({s,nx})=>{
+    const st = statusLine(s, now);
+    const badge = s.state==="on" ? '<span class="badge on">稼働中</span>'
+               : s.state==="train" ? '<span class="badge train">研修中</span>'
+               : '<span class="badge">卒業</span>';
+    const sched = s.runs.length
+      ? [...new Set(s.runs.map(r=>{
+          const d = r.days.length===5 && !r.days.includes(0) && !r.days.includes(6) ? "平日" : r.days.map(x=>WD[x]).join("・");
+          const w = r.rule==="w1"?"（第1週）":r.rule==="w2plus"?"（第2週以降）":r.rule==="w3"?"（第3週）":"";
+          return `${d}${w} ${r.time}`;
+        }))].join(" ／ ")
+      : "スケジュールなし";
+    const nextTxt = nx ? `次の出番：${nx.k===0?"今日":nx.k===1?"明日":`${nx.m}/${nx.d}（${WD[nx.wd]}）`} ${fmt(nx.min)}` : "";
+    const rec = STATUS[s.id] || {};
+    const lv = typeof rec.level === "number" ? rec.level : null;
+    const pct = lv===null ? 0 : Math.min(100, lv);
+    return `<article class="card ${s.state==="grad"?"grad":""}">
+      ${avatar(s)}
+      <div class="body">
+        <div class="name">${s.name}${badge}</div>
+        <div class="role">${s.role}｜${lv===null?"Lv未測定":"育成Lv."+lv}</div>
+        <div class="meta">${sched}</div>
+        ${s.perm?`<div class="meta">権限：${s.perm}</div>`:""}
+        ${nextTxt?`<div class="meta">${nextTxt}</div>`:""}
+        <div class="st ${st.cls}">${st.text}</div>
+        <div class="bar"><i style="width:${pct}%;background:${COLORS[s.color]}"></i></div>
+      </div>
+    </article>`;
+  }).join("");
+
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.f===filter)));
+}
+
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+  filter = b.dataset.f;
+  try{ localStorage.setItem("aiStaffFilter", filter); }catch(e){}
+  render();
+}));
+document.getElementById("theme").addEventListener("click",()=>{
+  const r = document.documentElement;
+  const dark = r.dataset.theme ? r.dataset.theme==="dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+  r.dataset.theme = dark ? "light" : "dark";
+});
+
+loadStatus().then(render);
+setInterval(render, 60*1000);
+</script>
+</body>
+</html>
